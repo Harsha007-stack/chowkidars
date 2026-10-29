@@ -46,9 +46,10 @@ Open **SQL Editor** in your Supabase dashboard. Run each of the following files 
 | ----- | --------------------------------------------------- | ------------------------------------------------------------- |
 | 1     | `scripts/001_create_schema.sql`                     | Creates `profiles`, `sites`, `guards`, `attendance` + RLS     |
 | 2     | `scripts/002_admin_managed_accounts.sql`            | Adds guard shifts and restricts account/role provisioning    |
-| 3     | (Run inline, see below)                             | Adds `latitude`, `longitude`, `accuracy_m` to attendance      |
+| 3     | `scripts/003_repair_guard_profile_sync.sql`          | Repairs guard profile/record trigger and backfills accounts |
+| 4     | (Run inline, see below)                             | Adds `latitude`, `longitude`, `accuracy_m` to attendance      |
 
-For an existing database, run `scripts/002_admin_managed_accounts.sql` to apply the account restrictions and guard shift fields. It blocks public account creation and prevents users from changing their own role. Do not rerun the initial schema script.
+For an existing database, run migrations 2 and 3 in order. Migration 2 blocks public account creation and prevents users from changing their own role. Migration 3 repairs profile/guard creation for provisioned accounts and backfills any rows that were missed. Do not rerun the initial schema script.
 
 For the location columns, paste this into the SQL editor and run:
 

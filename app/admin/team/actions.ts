@@ -35,7 +35,7 @@ export async function createAdmin(formData: FormData) {
     return { ok: false, error: "Server is missing Supabase service role key." } as const
   }
 
-  const { error } = await admin.auth.admin.createUser({
+  const { data, error } = await admin.auth.admin.createUser({
     email,
     password,
     email_confirm: true,
@@ -43,11 +43,27 @@ export async function createAdmin(formData: FormData) {
     app_metadata: { guardtrac_provisioned: true },
   })
 
-  if (error) {
-    if (/already.*registered|exists/i.test(error.message)) {
+  if (error || !data?.user) {
+    if (/already.*registered|exists/i.test(error?.message ?? "")) {
       return { ok: false, error: "An account with this email already exists." } as const
     }
-    return { ok: false, error: error.message } as const
+    return { ok: false, error: error?.message ?? "Could not create admin account." } as const
+  }
+
+  const { error: profileError } = await admin.from("profiles").upsert(
+    { id: data.user.id, full_name: fullName, role: "admin" },
+    { onConflict: "id" },
+  )
+
+  if (profileError) {
+    const { error: deleteError } = await admin.auth.admin.deleteUser(data.user.id)
+    if (deleteError) {
+      return {
+        ok: false,
+        error: `Admin account was created, but saving its profile failed: ${profileError.message}. Cleanup also failed: ${deleteError.message}`,
+      } as const
+    }
+    return { ok: false, error: `Could not save the admin profile: ${profileError.message}` } as const
   }
 
   revalidatePath("/admin/team")
@@ -98,25 +114,49 @@ export async function createGuard(formData: FormData) {
     return { ok: false, error: message } as const
   }
 
-  const { error: updateError } = await admin
-    .from("guards")
-    .update({
+  const { error: profileError } = await admin.from("profiles").upsert(
+    {
+      id: data.user.id,
+      full_name: fullName,
       phone: phone || null,
-      site_id: siteId || null,
-      shift_start: shiftStart,
-      shift_end: shiftEnd,
-    })
-    .eq("id", data.user.id)
+      role: "guard",
+    },
+    { onConflict: "id" },
+  )
 
-  if (updateError) {
+  if (profileError) {
     const { error: deleteError } = await admin.auth.admin.deleteUser(data.user.id)
     if (deleteError) {
       return {
         ok: false,
-        error: `Guard account was created, but setup failed: ${updateError.message}. Cleanup also failed: ${deleteError.message}`,
+        error: `Guard account was created, but saving its profile failed: ${profileError.message}. Cleanup also failed: ${deleteError.message}`,
       } as const
     }
-    return { ok: false, error: `Could not finish setting up the guard: ${updateError.message}` } as const
+    return { ok: false, error: `Could not save the guard profile: ${profileError.message}` } as const
+  }
+
+  const { error: guardError } = await admin.from("guards").upsert(
+    {
+      id: data.user.id,
+      full_name: fullName,
+      phone: phone || null,
+      email,
+      site_id: siteId || null,
+      shift_start: shiftStart,
+      shift_end: shiftEnd,
+    },
+    { onConflict: "id" },
+  )
+
+  if (guardError) {
+    const { error: deleteError } = await admin.auth.admin.deleteUser(data.user.id)
+    if (deleteError) {
+      return {
+        ok: false,
+        error: `Guard account was created, but saving its guard record failed: ${guardError.message}. Cleanup also failed: ${deleteError.message}`,
+      } as const
+    }
+    return { ok: false, error: `Could not save the guard record: ${guardError.message}` } as const
   }
 
   revalidatePath("/admin/team")
