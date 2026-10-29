@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge"
 import { requireRole } from "@/lib/auth"
 import { createAdminClient } from "@/lib/supabase/admin"
 import { CreateAdminForm } from "@/components/create-admin-form"
+import { CreateGuardForm } from "@/components/create-guard-form"
 import { RemoveAdminButton } from "@/components/remove-admin-button"
 
 export const dynamic = "force-dynamic"
@@ -11,11 +12,14 @@ export default async function AdminTeamPage() {
   const { user } = await requireRole("admin")
   const admin = createAdminClient()
 
-  const { data: profiles } = await admin
-    .from("profiles")
-    .select("id, full_name, created_at")
-    .eq("role", "admin")
-    .order("created_at", { ascending: true })
+  const [{ data: profiles }, { data: sites }] = await Promise.all([
+    admin
+      .from("profiles")
+      .select("id, full_name, created_at")
+      .eq("role", "admin")
+      .order("created_at", { ascending: true }),
+    admin.from("sites").select("id, site_name").order("site_name", { ascending: true }),
+  ])
 
   const rows: { id: string; full_name: string; email: string; created_at: string }[] = []
   for (const p of profiles ?? []) {
@@ -33,9 +37,21 @@ export default async function AdminTeamPage() {
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Team</h1>
         <p className="text-sm text-muted-foreground">
-          Only existing admins can create new admin accounts. Public sign-ups are always created as guards.
+          Create login accounts for guards and admins. Public account creation is disabled.
         </p>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Add a guard</CardTitle>
+          <CardDescription>
+            Set their login credentials, duty hours, and optional site assignment.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <CreateGuardForm sites={sites ?? []} />
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>

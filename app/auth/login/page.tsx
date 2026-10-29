@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Suspense, useState } from "react"
 import { Brand } from "@/components/brand"
@@ -97,13 +96,7 @@ function LoginForm() {
             </Button>
           </div>
           <p className="mt-6 text-center text-sm text-muted-foreground">
-            {"Don't have an account? "}
-            <Link
-              href={next ? `/auth/sign-up?next=${encodeURIComponent(next)}` : "/auth/sign-up"}
-              className="font-medium text-foreground underline underline-offset-4"
-            >
-              Create one
-            </Link>
+            Need an account? Ask your administrator to create one for you.
           </p>
         </form>
       </CardContent>

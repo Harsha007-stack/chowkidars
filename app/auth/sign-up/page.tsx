@@ -1,16 +1,9 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Brand } from "@/components/brand"
-import { SignUpForm } from "@/components/sign-up-form"
-import { listPublicSites } from "./actions"
+import Link from "next/link"
+import { Button } from "@/components/ui/button"
 
-// Always fetch the latest sites list — admins can add/remove sites at any time
-// and we don't want the sign-up page serving a stale cached copy.
-export const dynamic = "force-dynamic"
-export const revalidate = 0
-
-export default async function SignUpPage() {
-  const sites = await listPublicSites()
-
+export default function SignUpPage() {
   return (
     <div className="flex min-h-svh w-full items-center justify-center bg-background p-6 md:p-10">
       <div className="w-full max-w-md">
@@ -19,14 +12,15 @@ export default async function SignUpPage() {
         </div>
         <Card>
           <CardHeader>
-            <CardTitle className="text-2xl">Create your guard account</CardTitle>
+            <CardTitle className="text-2xl">Account creation is restricted</CardTitle>
             <CardDescription>
-              Sign up as a security guard to start marking attendance. Admin accounts are created by your agency
-              administrator.
+              Account creation is managed by your agency administrator. Ask them to create your login credentials.
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <SignUpForm sites={sites} />
+          <CardContent className="flex flex-col gap-4">
+            <Button asChild>
+              <Link href="/auth/login">Go to sign in</Link>
+            </Button>
           </CardContent>
         </Card>
       </div>

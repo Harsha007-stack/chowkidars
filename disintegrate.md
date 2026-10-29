@@ -45,7 +45,10 @@ Open **SQL Editor** in your Supabase dashboard. Run each of the following files 
 | Order | File in repo                                        | What it does                                                  |
 | ----- | --------------------------------------------------- | ------------------------------------------------------------- |
 | 1     | `scripts/001_create_schema.sql`                     | Creates `profiles`, `sites`, `guards`, `attendance` + RLS     |
-| 2     | (Run inline, see below)                             | Adds `latitude`, `longitude`, `accuracy_m` to attendance      |
+| 2     | `scripts/002_admin_managed_accounts.sql`            | Adds guard shifts and restricts account/role provisioning    |
+| 3     | (Run inline, see below)                             | Adds `latitude`, `longitude`, `accuracy_m` to attendance      |
+
+For an existing database, run `scripts/002_admin_managed_accounts.sql` to apply the account restrictions and guard shift fields. It blocks public account creation and prevents users from changing their own role. Do not rerun the initial schema script.
 
 For the location columns, paste this into the SQL editor and run:
 
@@ -88,7 +91,7 @@ VALUES (
   'you@example.com',
   crypt('YourStrongPassword123', gen_salt('bf')),
   now(),
-  '{"provider":"email","providers":["email"]}',
+  '{"provider":"email","providers":["email"],"guardtrac_provisioned":true}',
   '{"role":"admin","full_name":"Your Name"}',
   now(), now(), '', '', '', ''
 );
@@ -182,9 +185,10 @@ Save.
 1. Open your Vercel URL → **Sign in** with the admin you created in step 3d
 2. Go to **Admin → Sites** → add a site (this generates a QR token)
 3. Click the **QR** button on a site → **Print poster** to print and stick it at the location
-4. Have your guards sign up at `/auth/sign-up` (they always sign up as guards — admin sign-up from this page is locked by design)
-5. Go to **Admin → Guards** → assign each guard to a site and set their base salary
-6. Done. Guards can scan the printed poster with any phone camera and attendance is recorded with GPS
+4. Go to **Admin → Team** and create guard accounts with their login email, password, shift, and optional site
+5. Share the credentials with each guard so they can sign in
+6. Go to **Admin → Guards** to set each guard's base salary
+7. Done. Guards can scan the printed poster with any phone camera and attendance is recorded with GPS
 
 ---
 
@@ -205,11 +209,8 @@ Before rolling out to a real security agency, consider:
 
 ## 9. Common issues
 
-**"Email rate limit exceeded" on signup**
-Email confirmation is on. Disable it in Supabase Auth → Providers → Email.
-
-**"Invalid login credentials" right after signup**
-Email confirmation is on and the user hasn't clicked the link. Either disable confirmation or click the link in the inbox.
+**A guard cannot create an account**
+Public self-service sign-up is disabled. An administrator must create guard accounts from **Admin → Team**.
 
 **Admin notifications never arrive**
 Check three things: (1) `RESEND_API_KEY` is set in Vercel env vars, (2) `NOTIFY_FROM_EMAIL` either is `onboarding@resend.dev` *and* you're checking the inbox of the email that owns the Resend account, OR you've verified your domain, (3) at least one user in `auth.users` has `raw_user_meta_data->>'role' = 'admin'`.
@@ -226,7 +227,7 @@ The guard denied location permission, or the device has GPS off, or the page is 
 
 | Path                                  | Purpose                                                |
 | ------------------------------------- | ------------------------------------------------------ |
-| `app/auth/*`                          | Login, signup (guard-only public), callback, sign-out  |
+| `app/auth/*`                          | Login, restricted sign-up notice, callback, sign-out |
 | `app/guard/*`                         | Guard dashboard, QR scan, attendance, salary           |
 | `app/admin/*`                         | Admin overview, sites, guards, attendance log, team    |
 | `lib/supabase/{client,server,admin}.ts` | Supabase clients (browser, RSC, service-role)        |

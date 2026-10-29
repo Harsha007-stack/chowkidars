@@ -111,7 +111,7 @@ export default async function AdminOverview() {
         {orderedGroups.length === 0 ? (
           <Card>
             <CardContent className="px-6 py-10 text-center text-sm text-muted-foreground">
-              No guards yet. They&apos;ll appear here as soon as they sign up.
+              No guards yet. Add guard accounts from the Team page.
             </CardContent>
           </Card>
         ) : (

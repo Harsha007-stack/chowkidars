@@ -69,9 +69,7 @@ export function GuardsList({
         </ul>
       ) : (
         <p className="px-6 py-10 text-center text-sm text-muted-foreground">
-          {query
-            ? "No guards match your search."
-            : "No guards yet. Share the sign-up link with your team."}
+          {query ? "No guards match your search." : "No guards yet. Add a guard from the Team page."}
         </p>
       )}
     </div>

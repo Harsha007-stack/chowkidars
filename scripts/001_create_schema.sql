@@ -39,6 +39,8 @@ create table if not exists public.guards (
   email text,
   site_id uuid references public.sites(id) on delete set null,
   base_salary numeric not null default 0,
+  shift_start time,
+  shift_end time,
   created_at timestamptz not null default now()
 );
 
@@ -85,11 +87,12 @@ create policy "profiles_select" on public.profiles
 
 drop policy if exists "profiles_insert_own" on public.profiles;
 create policy "profiles_insert_own" on public.profiles
-  for insert with check (auth.uid() = id);
+  for insert with check (auth.uid() = id and role = 'guard');
 
 drop policy if exists "profiles_update" on public.profiles;
 create policy "profiles_update" on public.profiles
-  for update using (auth.uid() = id or public.is_admin(auth.uid()));
+  for update using (public.is_admin(auth.uid()))
+  with check (public.is_admin(auth.uid()));
 
 -- sites: everyone authenticated can read; only admins can write
 drop policy if exists "sites_select" on public.sites;
@@ -157,7 +160,14 @@ declare
   v_name text;
   v_phone text;
 begin
+  if coalesce(new.raw_app_meta_data ->> 'guardtrac_provisioned', 'false') <> 'true' then
+    raise exception 'Accounts must be created by an administrator.';
+  end if;
+
   v_role := coalesce(new.raw_user_meta_data ->> 'role', 'guard');
+  if v_role not in ('guard', 'admin') then
+    v_role := 'guard';
+  end if;
   v_name := coalesce(new.raw_user_meta_data ->> 'full_name', split_part(new.email, '@', 1));
   v_phone := new.raw_user_meta_data ->> 'phone';
 
