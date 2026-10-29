@@ -1,4 +1,4 @@
-# GuardTrack AI System
+# Chowkidars - GuardTrack AI System
 
 GuardTrack AI System is a web-based attendance, payroll, and workforce management platform built for security agencies and field staff operations.
 
